@@ -1,0 +1,35 @@
+name: Run Ansible Playbook
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible python3-apt sshpass
+
+      - name: Load .env variables
+        run: |
+          export $(grep -v '^#' .env | xargs)
+
+      - name: Save SSH key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          echo "$SSH_KEY" > private_key.pem
+          chmod 600 private_key.pem
+
+      - name: Run Ansible Playbook
+        env:
+          NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
+        run: |
+          ansible-playbook install-newrelic.yml \
+            -i "${SERVER_IP}," \
+            -u "$SERVER_USER" \
+            --private-key private_key.pem
