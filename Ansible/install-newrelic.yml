@@ -1,35 +1,34 @@
-name: Run Ansible Playbook
+---
+- name: Install and configure New Relic Infrastructure agent
+  hosts: all
+  become: yes
+  vars:
+    license_key: "{{ NEW_RELIC_LICENSE_KEY }}"   # passed from GitHub Secret
+  tasks:
+    - name: Add New Relic repo
+      apt_key:
+        url: https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
+        state: present
 
-on:
-  workflow_dispatch:
+    - name: Add New Relic apt repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.newrelic.com/infrastructure_agent/linux/apt {{ ansible_distribution_release }} main"
+        state: present
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+    - name: Install New Relic agent
+      apt:
+        name: newrelic-infra
+        state: present
+        update_cache: yes
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+    - name: Configure New Relic license key
+      copy:
+        dest: /etc/newrelic-infra.yml
+        content: |
+          license_key: {{ license_key }}
 
-      - name: Install Ansible
-        run: sudo apt-get update && sudo apt-get install -y ansible python3-apt sshpass
-
-      - name: Load .env variables
-        run: |
-          export $(grep -v '^#' .env | xargs)
-
-      - name: Save SSH key
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-        run: |
-          echo "$SSH_KEY" > private_key.pem
-          chmod 600 private_key.pem
-
-      - name: Run Ansible Playbook
-        env:
-          NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
-        run: |
-          ansible-playbook install-newrelic.yml \
-            -i "${SERVER_IP}," \
-            -u "$SERVER_USER" \
-            --private-key private_key.pem
+    - name: Ensure New Relic service is running
+      systemd:
+        name: newrelic-infra
+        state: started
+        enabled: yes
