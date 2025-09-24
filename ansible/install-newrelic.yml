@@ -2,7 +2,8 @@
   hosts: all
   become: yes
   vars:
-    license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # Pull from GitHub Secret
+    license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # GitHub Secret
+    region: "{{ lookup('env', 'NEW_RELIC_REGION') | default('US') }}"  # Default to US, override with EU if needed
   tasks:
     - name: Ensure apt-transport-https is installed
       apt:
@@ -26,11 +27,14 @@
         state: present
         update_cache: yes
 
-    - name: Configure New Relic license key
+    - name: Configure New Relic license key and region
       ansible.builtin.copy:
         dest: /etc/newrelic-infra.yml
         content: |
           license_key: {{ license_key }}
+          {% if region == 'EU' %}
+          region: EU
+          {% endif %}
         owner: root
         group: root
         mode: '0600'
