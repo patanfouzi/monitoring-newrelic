@@ -21,15 +21,14 @@ jobs:
         run: |
           # Load .env variables (SERVER_IP, SERVER_USER)
           export $(grep -v '^#' .env | xargs)
-
           echo "Using server: $SERVER_USER@$SERVER_IP"
 
           # Save SSH key
           echo "$SSH_KEY" > private_key.pem
           chmod 600 private_key.pem
 
-          # Run the Ansible playbook
-          ansible-playbook install-newrelic.yml \
+          # Run the Ansible playbook (adjust path to playbook folder)
+          ansible-playbook ansible/install-newrelic.yml \
             -i "${SERVER_IP}," \
             -u "${SERVER_USER}" \
             --private-key private_key.pem
