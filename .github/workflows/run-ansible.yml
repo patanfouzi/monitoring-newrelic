@@ -19,7 +19,7 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
         run: |
-          # Load .env variables (SERVER_IP, SERVER_USER)
+          # Load .env variables
           export $(grep -v '^#' .env | xargs)
           echo "Using server: $SERVER_USER@$SERVER_IP"
 
@@ -27,7 +27,10 @@ jobs:
           echo "$SSH_KEY" > private_key.pem
           chmod 600 private_key.pem
 
-          # Run the Ansible playbook (adjust path to playbook folder)
+          # Disable host key checking for GitHub Actions runner
+          export ANSIBLE_HOST_KEY_CHECKING=False
+
+          # Run Ansible playbook
           ansible-playbook ansible/install-newrelic.yml \
             -i "${SERVER_IP}," \
             -u "${SERVER_USER}" \
