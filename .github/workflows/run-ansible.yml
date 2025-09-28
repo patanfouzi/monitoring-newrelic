@@ -1,3 +1,5 @@
+# .github/workflows/install-newrelic.yml
+
 name: Install New Relic on Existing Server
 
 on:
@@ -6,32 +8,24 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Ansible
-        run: sudo apt-get update && sudo apt-get install -y ansible python3-apt sshpass
+        run: sudo apt-get update && sudo apt-get install -y ansible python3-apt sshpass unzip
 
-      - name: Run Ansible Playbook with .env and Secrets
+      - name: Run Ansible Playbook
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
-          NEW_RELIC_REGION: ${{ secrets.NEW_RELIC_REGION }} # Optional: US or EU
+          NEW_RELIC_REGION: ${{ secrets.NEW_RELIC_REGION }}
+          SERVER_USER: ubuntu
+          SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          # Load .env variables
-          export $(grep -v '^#' .env | xargs)
-          echo "Using server: $SERVER_USER@$SERVER_IP"
-
-          # Save SSH key
           echo "$SSH_KEY" > private_key.pem
           chmod 600 private_key.pem
-
-          # Disable host key checking for Ansible
           export ANSIBLE_HOST_KEY_CHECKING=False
-
-          # Run Ansible playbook
           ansible-playbook ansible/install-newrelic.yml \
             -i "${SERVER_IP}," \
             -u "${SERVER_USER}" \
