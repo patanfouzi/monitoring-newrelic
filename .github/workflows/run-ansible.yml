@@ -8,15 +8,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Install Ansible and dependencies
       - name: Install Ansible and dependencies
         run: sudo apt-get update && sudo apt-get install -y ansible python3-apt sshpass unzip
 
-      # 3️⃣ Run Ansible Playbook
       - name: Run Ansible Playbook for Monitoring
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
