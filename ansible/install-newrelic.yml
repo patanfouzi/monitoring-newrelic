@@ -1,4 +1,4 @@
-- name: Install and configure New Relic Infrastructure + Java Agent
+- name: Install and configure New Relic Infrastructure and Java agents
   hosts: all
   become: yes
   vars:
@@ -6,74 +6,18 @@
     region: "{{ lookup('env', 'NEW_RELIC_REGION') | default('US') }}"
     app_dir: "/home/ubuntu/spring-petclinic"
 
-  tasks:
-    # -------------------------------
-    # Infrastructure Agent (System Metrics)
-    # -------------------------------
-    - name: Ensure dependencies are installed
-      apt:
-        name:
-          - apt-transport-https
-          - curl
-        state: present
-        update_cache: yes
-
-    - name: Add New Relic GPG key
-      ansible.builtin.apt_key:
-        url: https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
-        state: present
-
-    - name: Add New Relic apt repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64] https://download.newrelic.com/infrastructure_agent/linux/apt {{ ansible_distribution_release | lower }} main"
-        state: present
-        filename: newrelic-infra
-
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-
-    - name: Install New Relic Infrastructure agent
-      ansible.builtin.apt:
-        name: newrelic-infra
-        state: present
-        update_cache: yes
-
-    - name: Verify newrelic-infra package installation
-      command: dpkg -l newrelic-infra
-      register: result
-      failed_when: result.rc != 0
-      changed_when: false
-
-    - name: Debug newrelic-infra installation verification
-      debug:
-        var: result.stdout_lines
-
-    - name: Configure New Relic license key and region
-      copy:
-        dest: /etc/newrelic-infra.yml
-        content: |
-          license_key: {{ license_key }}
+  roles:
+    - role: newrelic.newrelic-infra
+      vars:
+        nrinfragent_config:
+          license_key: "{{ license_key }}"
           {% if region == 'EU' %}
           region: EU
           {% endif %}
-        owner: root
-        group: root
-        mode: '0600'
+        nrinfragent_service_state: started
+        nrinfragent_service_enabled: yes
 
-    - name: Reload systemd to recognize new service
-      command: systemctl daemon-reload
-      changed_when: false
-
-    - name: Restart New Relic Infrastructure agent
-      ansible.builtin.systemd:
-        name: newrelic-infra
-        state: restarted
-        enabled: yes
-
-    # -------------------------------
-    # Java Agent (Application Metrics)
-    # -------------------------------
+  tasks:
     - name: Ensure unzip is installed
       apt:
         name: unzip
@@ -86,7 +30,7 @@
         dest: /tmp/newrelic-java.zip
         mode: '0644'
 
-    - name: Unzip Java agent
+    - name: Unarchive New Relic Java agent
       unarchive:
         src: /tmp/newrelic-java.zip
         dest: /opt/
@@ -111,7 +55,7 @@
         owner: ubuntu
         group: ubuntu
 
-    - name: Start Spring Boot app with New Relic agent
+    - name: Start Spring Boot app with New Relic Java agent
       shell: |
         pkill -f spring-petclinic || true
         nohup java -javaagent:/opt/newrelic/newrelic.jar -jar {{ app_dir }}/target/*.jar > {{ app_dir }}/app.log 2>&1 &
