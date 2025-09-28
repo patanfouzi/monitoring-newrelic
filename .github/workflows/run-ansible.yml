@@ -1,4 +1,4 @@
-name: Install New Relic on Existing Server
+name: Install New Relic Monitoring on Existing Server
 
 on:
   workflow_dispatch:
@@ -8,42 +8,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java and Maven
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Build Spring Boot app
-        run: ./mvnw clean package -DskipTests
-        working-directory: ./spring-petclinic
-
-      - name: Install Ansible
+      # 2️⃣ Install Ansible and dependencies
+      - name: Install Ansible and dependencies
         run: sudo apt-get update && sudo apt-get install -y ansible python3-apt sshpass unzip
 
-      - name: Run Ansible Playbook with .env and Secrets
+      # 3️⃣ Run Ansible Playbook
+      - name: Run Ansible Playbook for Monitoring
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
           NEW_RELIC_REGION: ${{ secrets.NEW_RELIC_REGION }} # Optional: US or EU
         run: |
-          # Load .env variables
+          # Load .env variables if present
           if [ -f .env ]; then
             export $(grep -v '^#' .env | xargs)
           fi
-          echo "Using server: $SERVER_USER@$SERVER_IP"
+          echo "Connecting to server: $SERVER_USER@$SERVER_IP"
 
-          # Save SSH key
+          # Save SSH key and set permissions
           echo "$SSH_KEY" > private_key.pem
           chmod 600 private_key.pem
 
           # Disable host key checking for Ansible
           export ANSIBLE_HOST_KEY_CHECKING=False
 
-          # Run Ansible playbook
+          # Run the Ansible playbook
           ansible-playbook ansible/install-newrelic.yml \
             -i "${SERVER_IP}," \
             -u "${SERVER_USER}" \
