@@ -42,7 +42,7 @@
         state: started
         enabled: yes
 
- # ---------- Install unzip (needed for Java agent) ----------
+ # ---------- Install unzip for Java agent ----------
     - name: Ensure unzip is installed
       apt:
         name: unzip
@@ -74,7 +74,23 @@
         group: root
         mode: '0600'
 
-    # ---------- Spring Boot PetClinic systemd service ----------
+    # ---------- Detect Spring Boot JAR ----------
+    - name: Find Spring Boot JAR
+      find:
+        paths: "{{ app_path }}/target"
+        patterns: "*.jar"
+        file_type: file
+      register: spring_jar
+
+    - name: Fail if no JAR found
+      fail:
+        msg: "No JAR found in {{ app_path }}/target. Please check the app path."
+      when: spring_jar.files | length == 0
+
+    - set_fact:
+        app_jar: "{{ spring_jar.files[0].path }}"
+
+    # ---------- Spring Boot systemd service ----------
     - name: Create systemd service for Spring Boot PetClinic app
       copy:
         dest: /etc/systemd/system/petclinic.service
@@ -85,7 +101,7 @@
 
           [Service]
           User=ubuntu
-          ExecStart=/usr/bin/java -javaagent:{{ newrelic_path }}/newrelic.jar -jar {{ app_path }}/target/*.jar
+          ExecStart=/usr/bin/java -javaagent:{{ newrelic_path }}/newrelic.jar -jar {{ app_jar }}
           SuccessExitStatus=143
           Restart=always
 
