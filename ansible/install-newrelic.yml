@@ -41,7 +41,8 @@
         name: newrelic-infra
         state: started
         enabled: yes
-# ---------- Install unzip (needed for Java agent) ----------
+
+ # ---------- Install unzip (needed for Java agent) ----------
     - name: Ensure unzip is installed
       apt:
         name: unzip
@@ -98,3 +99,12 @@
         daemon_reload: yes
         state: started
         enabled: yes
+
+    # ---------- Wait until Spring Boot app is up ----------
+    - name: Wait for Spring Boot PetClinic to be up
+      wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 60
+        state: started
