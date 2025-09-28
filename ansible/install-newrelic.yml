@@ -4,6 +4,9 @@
   gather_facts: yes       # collect system info (OS, packages, etc.)
   vars:
     license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # from GitHub Secrets
+    newrelic_path: /opt/newrelic
+    app_path: /home/ubuntu/spring-petclinic
+    app_port: 8080
   tasks:
     - name: Ensure apt-transport-https is installed
       apt:
