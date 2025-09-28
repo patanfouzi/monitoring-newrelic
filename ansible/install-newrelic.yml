@@ -51,7 +51,6 @@
         state: present
         update_cache: yes
 
-    # ---------- New Relic Java Agent ----------
     - name: Download New Relic Java Agent
       get_url:
         url: "https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip"
@@ -76,7 +75,6 @@
         group: root
         mode: '0600'
 
-    # ---------- Detect Spring Boot JAR ----------
     - name: Find Spring Boot JAR
       find:
         paths: "{{ app_path }}/target"
@@ -92,7 +90,6 @@
     - set_fact:
         app_jar: "{{ spring_jar.files[0].path }}"
 
-    # ---------- Create systemd service (monitoring only) ----------
     - name: Create systemd service for Spring Boot PetClinic app
       copy:
         dest: /etc/systemd/system/petclinic.service
@@ -111,7 +108,6 @@
           WantedBy=multi-user.target
       mode: '0644'
 
-    # ---------- Wait until Spring Boot app is up ----------
     - name: Wait for Spring Boot PetClinic to be up
       wait_for:
         host: 127.0.0.1
