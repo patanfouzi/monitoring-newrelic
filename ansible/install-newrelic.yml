@@ -4,6 +4,8 @@
   vars:
     license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # GitHub Secret
     region: "{{ lookup('env', 'NEW_RELIC_REGION') | default('US') }}"  # Default to US, override with EU if needed
+
+# Existing infra agent steps
   tasks:
     - name: Ensure apt-transport-https is installed
       apt:
@@ -38,9 +40,46 @@
         owner: root
         group: root
         mode: '0600'
-
     - name: Ensure New Relic service is running
       ansible.builtin.systemd:
         name: newrelic-infra
         state: started
         enabled: yes
+
+# New Relic Java Agent
+    # -------------------------------
+    - name: Download New Relic Java agent
+      get_url:
+        url: https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip
+        dest: /tmp/newrelic-java.zip
+
+    - name: Unzip Java agent
+      unarchive:
+        src: /tmp/newrelic-java.zip
+        dest: /opt/
+        remote_src: yes
+
+    - name: Configure New Relic Java agent
+      copy:
+        dest: /opt/newrelic/newrelic.yml
+        content: |
+          common: &default_settings
+            license_key: {{ license_key }}
+            app_name: SpringPetClinic
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Ensure Spring Boot app directory exists
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Start Spring Boot app with New Relic agent
+      shell: |
+        pkill -f spring-petclinic || true
+        nohup java -javaagent:/opt/newrelic/newrelic.jar -jar {{ app_dir }}/target/*.jar > {{ app_dir }}/app.log 2>&1 &
+      args:
+        chdir: "{{ app_dir }}"
