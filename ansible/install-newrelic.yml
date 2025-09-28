@@ -27,12 +27,27 @@
       ansible.builtin.apt_repository:
         repo: "deb [arch=amd64] https://download.newrelic.com/infrastructure_agent/linux/apt {{ ansible_distribution_release | lower }} main"
         state: present
+        filename: newrelic-infra
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
 
     - name: Install New Relic Infrastructure agent
       ansible.builtin.apt:
         name: newrelic-infra
         state: present
         update_cache: yes
+
+    - name: Verify newrelic-infra package installation
+      command: dpkg -l newrelic-infra
+      register: result
+      failed_when: result.rc != 0
+      changed_when: false
+
+    - name: Debug newrelic-infra installation verification
+      debug:
+        var: result.stdout_lines
 
     - name: Configure New Relic license key and region
       copy:
@@ -45,6 +60,10 @@
         owner: root
         group: root
         mode: '0600'
+
+    - name: Reload systemd to recognize new service
+      command: systemctl daemon-reload
+      changed_when: false
 
     - name: Restart New Relic Infrastructure agent
       ansible.builtin.systemd:
@@ -65,6 +84,7 @@
       get_url:
         url: https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip
         dest: /tmp/newrelic-java.zip
+        mode: '0644'
 
     - name: Unzip Java agent
       unarchive:
