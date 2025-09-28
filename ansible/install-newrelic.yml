@@ -42,7 +42,9 @@
         state: started
         enabled: yes
 
-# ---------- Install unzip for Java agent ----------
+
+
+    # ---------- Install unzip for Java agent ----------
     - name: Ensure unzip is installed
       apt:
         name: unzip
