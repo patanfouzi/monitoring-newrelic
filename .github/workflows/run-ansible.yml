@@ -18,6 +18,7 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
+          NEW_RELIC_REGION: ${{ secrets.NEW_RELIC_REGION }} # Optional: US or EU
         run: |
           # Load .env variables
           export $(grep -v '^#' .env | xargs)
@@ -27,10 +28,10 @@ jobs:
           echo "$SSH_KEY" > private_key.pem
           chmod 600 private_key.pem
 
-          # Disable host key checking for GitHub Actions runner
+          # Disable host key checking for Ansible
           export ANSIBLE_HOST_KEY_CHECKING=False
 
-          # Run Ansible playbook
+          # Run Ansible playbook (note the trailing comma after $SERVER_IP)
           ansible-playbook ansible/install-newrelic.yml \
             -i "${SERVER_IP}," \
             -u "${SERVER_USER}" \
