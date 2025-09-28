@@ -41,3 +41,60 @@
         name: newrelic-infra
         state: started
         enabled: yes
+# ---------- Install unzip (needed for Java agent) ----------
+    - name: Ensure unzip is installed
+      apt:
+        name: unzip
+        state: present
+        update_cache: yes
+
+    # ---------- New Relic Java Agent ----------
+    - name: Download New Relic Java Agent
+      get_url:
+        url: "https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip"
+        dest: /opt/newrelic-java.zip
+        mode: '0644'
+
+    - name: Unzip New Relic Java Agent
+      unarchive:
+        src: /opt/newrelic-java.zip
+        dest: /opt/
+        remote_src: yes
+        creates: "{{ newrelic_path }}/newrelic.jar"
+
+    - name: Configure New Relic Java Agent
+      copy:
+        dest: "{{ newrelic_path }}/newrelic.yml"
+        content: |
+          common: &default_settings
+            license_key: {{ license_key }}
+            app_name: "SpringPetClinic"
+        owner: root
+        group: root
+        mode: '0600'
+
+    # ---------- Spring Boot PetClinic systemd service ----------
+    - name: Create systemd service for Spring Boot PetClinic app
+      copy:
+        dest: /etc/systemd/system/petclinic.service
+        content: |
+          [Unit]
+          Description=Spring PetClinic Application
+          After=network.target
+
+          [Service]
+          User=ubuntu
+          ExecStart=/usr/bin/java -javaagent:{{ newrelic_path }}/newrelic.jar -jar {{ app_path }}/target/*.jar
+          SuccessExitStatus=143
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+      mode: '0644'
+
+    - name: Reload systemd and start PetClinic service
+      systemd:
+        name: petclinic
+        daemon_reload: yes
+        state: started
+        enabled: yes
