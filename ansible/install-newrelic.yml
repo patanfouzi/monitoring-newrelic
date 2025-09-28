@@ -90,7 +90,8 @@
         msg: "No JAR found in {{ app_path }}/target. Please check the app path."
       when: spring_jar.files | length == 0
 
-    - set_fact:
+    - name: Set fact for app JAR
+      set_fact:
         app_jar: "{{ spring_jar.files[0].path }}"
 
     - name: Create systemd service for Spring Boot PetClinic app
