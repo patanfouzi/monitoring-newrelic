@@ -1,32 +1,35 @@
-# .github/workflows/install-newrelic.yml
+# .github/workflows/deploy-newrelic.yml
 
-name: Install New Relic on Existing Server
+name: Deploy New Relic Agents
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Ansible
-        run: sudo apt-get update && sudo apt-get install -y ansible python3-apt sshpass unzip
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+      - name: Install Ansible and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible python3-apt unzip sshpass
 
       - name: Run Ansible Playbook
         env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
           NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
           NEW_RELIC_REGION: ${{ secrets.NEW_RELIC_REGION }}
-          SERVER_USER: ubuntu
-          SERVER_IP: ${{ secrets.SERVER_IP }}
+          ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          echo "$SSH_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          export ANSIBLE_HOST_KEY_CHECKING=False
           ansible-playbook ansible/install-newrelic.yml \
-            -i "${SERVER_IP}," \
-            -u "${SERVER_USER}" \
+            -i "${{ secrets.SERVER_IP }}," \
+            -u ubuntu \
             --private-key private_key.pem
