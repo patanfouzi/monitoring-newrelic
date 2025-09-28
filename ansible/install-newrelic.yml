@@ -42,7 +42,7 @@
         state: started
         enabled: yes
 
- # ---------- Install unzip for Java agent ----------
+# ---------- Install unzip for Java agent ----------
     - name: Ensure unzip is installed
       apt:
         name: unzip
@@ -90,7 +90,7 @@
     - set_fact:
         app_jar: "{{ spring_jar.files[0].path }}"
 
-    # ---------- Spring Boot systemd service ----------
+    # ---------- Create systemd service (monitoring only) ----------
     - name: Create systemd service for Spring Boot PetClinic app
       copy:
         dest: /etc/systemd/system/petclinic.service
@@ -108,13 +108,6 @@
           [Install]
           WantedBy=multi-user.target
       mode: '0644'
-
-    - name: Reload systemd and start PetClinic service
-      systemd:
-        name: petclinic
-        daemon_reload: yes
-        state: started
-        enabled: yes
 
     # ---------- Wait until Spring Boot app is up ----------
     - name: Wait for Spring Boot PetClinic to be up
