@@ -1,9 +1,9 @@
-
 - name: Install and configure New Relic Infrastructure agent
-  hosts: all
-  become: yes
+  hosts: all              # matches any host provided via -i
+  become: yes             # run tasks as root
+  gather_facts: yes       # collect system info (OS, packages, etc.)
   vars:
-    license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # Pull from GitHub Secret
+    license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # from GitHub Secrets
   tasks:
     - name: Ensure apt-transport-https is installed
       apt:
