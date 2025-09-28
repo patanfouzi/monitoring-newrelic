@@ -8,13 +8,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Install Ansible and dependencies
       - name: Install Ansible and dependencies
-        run: sudo apt-get update && sudo apt-get install -y ansible python3-apt sshpass unzip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible python3-apt sshpass unzip
 
-      - name: Run Ansible Playbook for Monitoring
+      # 3️⃣ Run Ansible Playbook for Monitoring
+      - name: Run Ansible Playbook
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
@@ -24,6 +29,8 @@ jobs:
           if [ -f .env ]; then
             export $(grep -v '^#' .env | xargs)
           fi
+
+          # Check server variables
           echo "Connecting to server: $SERVER_USER@$SERVER_IP"
 
           # Save SSH key and set permissions
