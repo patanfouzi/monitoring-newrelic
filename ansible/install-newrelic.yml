@@ -11,9 +11,7 @@
       vars:
         nrinfragent_config:
           license_key: "{{ license_key }}"
-          {% if region == 'EU' %}
-          region: EU
-          {% endif %}
+          region: "{{ region if region == 'EU' else omit }}"
         nrinfragent_service_state: started
         nrinfragent_service_enabled: yes
 
