@@ -6,10 +6,8 @@
     region: "{{ lookup('env', 'NEW_RELIC_REGION') | default('US') }}"
     app_dir: "/home/ubuntu/spring-petclinic"
 
+  # Existing infra agent steps
   tasks:
-    # -------------------------------
-    # Infrastructure Agent
-    # -------------------------------
     - name: Ensure apt-transport-https is installed
       apt:
         name: apt-transport-https
@@ -43,7 +41,6 @@
         owner: root
         group: root
         mode: '0600'
-
     - name: Ensure New Relic service is running
       ansible.builtin.systemd:
         name: newrelic-infra
