@@ -1,12 +1,15 @@
-- name: Install and configure New Relic Infrastructure agent
+- name: Install and configure New Relic Infrastructure + Java Agent
   hosts: all
   become: yes
   vars:
-    license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # GitHub Secret
-    region: "{{ lookup('env', 'NEW_RELIC_REGION') | default('US') }}"  # Default to US, override with EU if needed
+    license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"
+    region: "{{ lookup('env', 'NEW_RELIC_REGION') | default('US') }}"
+    app_dir: "/home/ubuntu/spring-petclinic"
 
-# Existing infra agent steps
   tasks:
+    # -------------------------------
+    # Infrastructure Agent
+    # -------------------------------
     - name: Ensure apt-transport-https is installed
       apt:
         name: apt-transport-https
@@ -40,14 +43,22 @@
         owner: root
         group: root
         mode: '0600'
+
     - name: Ensure New Relic service is running
       ansible.builtin.systemd:
         name: newrelic-infra
         state: started
         enabled: yes
 
-# New Relic Java Agent
     # -------------------------------
+    # Java Agent for Application Metrics
+    # -------------------------------
+    - name: Ensure unzip is installed
+      apt:
+        name: unzip
+        state: present
+        update_cache: yes
+
     - name: Download New Relic Java agent
       get_url:
         url: https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip
