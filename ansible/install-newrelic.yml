@@ -1,7 +1,7 @@
 - name: Install and configure New Relic Infrastructure agent
-  hosts: all              # matches any host provided via -i
-  become: yes             # run tasks as root
-  gather_facts: yes       # collect system info (OS, packages, etc.)
+  hosts: all
+  become: yes
+  gather_facts: yes
   vars:
     license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # from GitHub Secrets
     newrelic_path: /opt/newrelic
@@ -45,7 +45,36 @@
         state: started
         enabled: yes
 
+    # ---------- Add Logging Configuration ----------
+    - name: Configure system logs for New Relic
+      copy:
+        dest: /etc/newrelic-infra/logging.d/system-logs.yml
+        content: |
+          logs:
+            - name: syslog
+              file: /var/log/syslog
+              attributes:
+                service: system
+            - name: authlog
+              file: /var/log/auth.log
+              attributes:
+                service: system
 
+    - name: Configure application logs for New Relic
+      copy:
+        dest: /etc/newrelic-infra/logging.d/app-logs.yml
+        content: |
+          logs:
+            - name: spring-app
+              file: {{ app_path }}/logs/app.log
+              attributes:
+                service: spring-petclinic
+
+    - name: Restart New Relic Infrastructure agent to pick up logs
+      systemd:
+        name: newrelic-infra
+        state: restarted
+        enabled: yes
 
     # ---------- Install unzip for Java agent ----------
     - name: Ensure unzip is installed
