@@ -150,11 +150,3 @@
         name: boxfuse
         enabled: yes
         state: started
-
-    - name: Wait for boxfuse to be up
-      wait_for:
-        host: 127.0.0.1
-        port: "{{ app_port }}"
-        delay: 5
-        timeout: 60
-        state: started
