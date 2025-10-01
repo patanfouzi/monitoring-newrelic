@@ -5,7 +5,7 @@
   vars:
     license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # from GitHub Secrets
     newrelic_path: /opt/newrelic
-    app_path: /home/ubuntu/spring-petclinic
+    app_path: /home/ubuntu/boxfuse-sample-java-war-hello
     app_port: 8080
   tasks:
     - name: Ensure apt-transport-https is installed
@@ -68,7 +68,7 @@
             - name: spring-app
               file: {{ app_path }}/logs/app.log
               attributes:
-                service: spring-petclinic
+                service: boxfuse-sample-java-war-hello
 
     - name: Restart New Relic Infrastructure agent to pick up logs
       systemd:
@@ -102,7 +102,7 @@
         content: |
           common: &default_settings
             license_key: {{ license_key }}
-            app_name: "SpringPetClinic"
+            app_name: "boxfuse"
         owner: root
         group: root
         mode: '0600'
@@ -125,10 +125,10 @@
 
     - name: Create systemd service for Spring Boot PetClinic app
       copy:
-        dest: /etc/systemd/system/petclinic.service
+        dest: /etc/systemd/system/boxfuse.service
         content: |
           [Unit]
-          Description=Spring PetClinic Application
+          Description=boxfuse Application
           After=network.target
 
           [Service]
@@ -145,13 +145,13 @@
       ansible.builtin.systemd:
         daemon_reload: yes
 
-    - name: Ensure PetClinic service is enabled and started
+    - name: Ensure boxfuse service is enabled and started
       ansible.builtin.systemd:
-        name: petclinic
+        name: boxfuse
         enabled: yes
         state: started
 
-    - name: Wait for Spring Boot PetClinic to be up
+    - name: Wait for boxfuse to be up
       wait_for:
         host: 127.0.0.1
         port: "{{ app_port }}"
