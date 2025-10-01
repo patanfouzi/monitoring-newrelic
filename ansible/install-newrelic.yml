@@ -5,7 +5,7 @@
   vars:
     license_key: "{{ lookup('env', 'NEW_RELIC_LICENSE_KEY') }}"  # from GitHub Secrets
     newrelic_path: /opt/newrelic
-    app_path: /home/ubuntu/boxfuse-sample-java-war-hello
+    app_path: /home/ubuntu/spring-petclinic
     app_port: 8080
   tasks:
     - name: Ensure apt-transport-https is installed
@@ -68,7 +68,7 @@
             - name: spring-app
               file: {{ app_path }}/logs/app.log
               attributes:
-                service: boxfuse-sample-java-war-hello
+                service: spring-petclinic
 
     - name: Restart New Relic Infrastructure agent to pick up logs
       systemd:
@@ -94,7 +94,7 @@
         src: /opt/newrelic-java.zip
         dest: /opt/
         remote_src: yes
-        creates: "{{ newrelic_path }}/newrelic.war"
+        creates: "{{ newrelic_path }}/newrelic.jar"
 
     - name: Configure New Relic Java Agent
       copy:
@@ -102,7 +102,7 @@
         content: |
           common: &default_settings
             license_key: {{ license_key }}
-            app_name: "boxfuse"
+            app_name: "SpringPetClinic"
         owner: root
         group: root
         mode: '0600'
@@ -110,30 +110,30 @@
     - name: Find Spring Boot JAR
       find:
         paths: "{{ app_path }}/target"
-        patterns: "*.war"
+        patterns: "*.jar"
         file_type: file
-      register: boxfuse_war
+      register: spring_jar
 
     - name: Fail if no JAR found
       fail:
         msg: "No JAR found in {{ app_path }}/target. Please check the app path."
-      when: boxfuse_war.files | length == 0
+      when: spring_jar.files | length == 0
 
-    - name: Set fact for app WAR
+    - name: Set fact for app JAR
       set_fact:
-        app_war: "{{ boxfuse_war.files[0].path }}"
+        app_jar: "{{ spring_jar.files[0].path }}"
 
     - name: Create systemd service for Spring Boot PetClinic app
       copy:
-        dest: /etc/systemd/system/boxfuse.service
+        dest: /etc/systemd/system/petclinic.service
         content: |
           [Unit]
-          Description=boxfuse Application
+          Description=Spring PetClinic Application
           After=network.target
 
           [Service]
           User=ubuntu
-          ExecStart=/usr/bin/java -javaagent:{{ newrelic_path }}/newrelic.war -war {{ app_war }}
+          ExecStart=/usr/bin/java -javaagent:{{ newrelic_path }}/newrelic.jar -jar {{ app_jar }}
           SuccessExitStatus=143
           Restart=always
 
@@ -145,8 +145,16 @@
       ansible.builtin.systemd:
         daemon_reload: yes
 
-    - name: Ensure boxfuse service is enabled and started
+    - name: Ensure PetClinic service is enabled and started
       ansible.builtin.systemd:
-        name: boxfuse
+        name: petclinic
         enabled: yes
+        state: started
+
+    - name: Wait for Spring Boot PetClinic to be up
+      wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 60
         state: started
