@@ -94,7 +94,7 @@
         src: /opt/newrelic-java.zip
         dest: /opt/
         remote_src: yes
-        creates: "{{ newrelic_path }}/newrelic.jar"
+        creates: "{{ newrelic_path }}/newrelic.war"
 
     - name: Configure New Relic Java Agent
       copy:
@@ -110,18 +110,18 @@
     - name: Find Spring Boot JAR
       find:
         paths: "{{ app_path }}/target"
-        patterns: "*.jar"
+        patterns: "*.war"
         file_type: file
-      register: spring_jar
+      register: boxfuse_war
 
     - name: Fail if no JAR found
       fail:
         msg: "No JAR found in {{ app_path }}/target. Please check the app path."
-      when: spring_jar.files | length == 0
+      when: boxfuse_war.files | length == 0
 
-    - name: Set fact for app JAR
+    - name: Set fact for app WAR
       set_fact:
-        app_jar: "{{ spring_jar.files[0].path }}"
+        app_war: "{{ boxfuse_war.files[0].path }}"
 
     - name: Create systemd service for Spring Boot PetClinic app
       copy:
@@ -133,7 +133,7 @@
 
           [Service]
           User=ubuntu
-          ExecStart=/usr/bin/java -javaagent:{{ newrelic_path }}/newrelic.jar -jar {{ app_jar }}
+          ExecStart=/usr/bin/java -javaagent:{{ newrelic_path }}/newrelic.war -war {{ app_war }}
           SuccessExitStatus=143
           Restart=always
 
